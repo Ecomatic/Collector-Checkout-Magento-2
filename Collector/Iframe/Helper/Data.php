@@ -546,12 +546,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
                 'vat' => $percent
             ));
         }
-        $totals =
-            (!empty($quoteTotals['subtotal']) ? $quoteTotals['subtotal'] : 0)
-            + (!empty($cartTotals['fee']['value']) ? $cartTotals['fee']['value'] : 0)
-            + (!empty($quoteTotals['shipping_amount']) ? $quoteTotals['shipping_amount'] - $quoteTotals['shipping_tax_amount'] : 0)
-            + (!empty($cartTotals['tax']['value']) ? $cartTotals['tax']['value'] : 0);
-        if ($this->cart->getQuote()->getGrandTotal() < $totals) {
+        $discountAmount = $this->cart->getQuote()->getSubtotal() - $this->cart->getQuote()->getSubtotalWithDiscount();
+        if ($discountAmount > 0) {
             $coupon = "no_code";
             if ($this->cart->getQuote()->getCouponCode() != null) {
                 $coupon = $this->cart->getQuote()->getCouponCode();
@@ -562,20 +558,20 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
                 'quantity' => 1,
                 'unitPrice' => sprintf(
                     "%01.2f",
-                    $this->cart->getQuote()->getGrandTotal() - $totals
+                    $discountAmount*-1
                 ),
                 'vat' => '0',
             );
             array_push($items, $code);
         }
-        if ($this->cart->getQuote()->getGrandTotal() < ($sum + ($this->cart->getQuote()->getGrandTotal() - $totals))){
+        if ($this->cart->getQuote()->getGrandTotal() < (($sum + $quoteTotals['shipping_amount'] + $quoteTotals['shipping_tax_amount']) - $discountAmount)){
             $rounding = array(
                 'id' => 'rounding',
                 'description' => 'rounding',
                 'quantity' => 1,
                 'unitPrice' => sprintf(
                     "%01.2f",
-                    $this->cart->getQuote()->getGrandTotal() - ($sum + ($this->cart->getQuote()->getGrandTotal() - $totals))
+                    $this->cart->getQuote()->getGrandTotal() - (($sum + $quoteTotals['shipping_amount'] + $quoteTotals['shipping_tax_amount']) - $discountAmount)
                 ),
                 'vat' => '0',
             );
