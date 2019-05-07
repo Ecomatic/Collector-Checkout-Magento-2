@@ -539,7 +539,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             }
             $sum += ($price * $qty);
             array_push($items, array(
-                'id' => $cartItem->getSku(),
+                'id' => substr($cartItem->getSku(),0,50),
                 'description' => $cartItem->getName(),
                 'unitPrice' => round($price,  2),
                 'quantity' => $qty,
