@@ -140,13 +140,19 @@ $checkoutHelper = $block->getCheckoutHelper();
                         </td>
                         <td class="col-price <?php echo $code == 'grand_total' ? "col-grand" : ""; ?>">
                             <?php
-                            $price = $total['value'];
+                            if ($this->getConfigObject()->getValue('tax/cart_display/shipping') == 1){
+                                $price = $this->getShippingExclTax();
+                            }
+                            else {
+                                $price = $this->getShippingInclTax();
+                            }
+
                             $additional = 0;
                             ?>
                             <?php echo $checkoutHelper->formatPrice($price + $priceHelper->currency($additional, false, false)); ?>
                         </td>
                     </tr>
-                    <?php if ($this->getConfigObject()->getValue('tax/display/shipping') == 3): ?>
+                    <?php if ($this->getConfigObject()->getValue('tax/cart_display/shipping') == 3): ?>
                         <tr>
                             <td class="col-name">
                                     <span class="<?php echo $code == 'grand_total' ? "col-grandname" : ""; ?>">
@@ -182,7 +188,7 @@ $checkoutHelper = $block->getCheckoutHelper();
 
 
 
-                    <?php if ($this->getConfigObject()->getValue('tax/cart_display/price') == 3): ?>
+                    <?php if ($this->getConfigObject()->getValue('tax/cart_display/subtotal') == 3): ?>
                         <?php if ($code == "subtotal"){ ?>
                             <tr>
                                 <td class="col-name">
