@@ -213,6 +213,10 @@ class Invoice extends \Magento\Payment\Model\Method\AbstractMethod
             } catch (\Exception $e) {
                 $this->collectorLogger->error($e->getMessage());
                 $this->collectorLogger->error($e->getTraceAsString());
+                throw new CouldNotSaveException(
+                    __($e->getMessage()),
+                    $e
+                );
             }
         } else {
             foreach ($payment->getOrder()->getInvoiceCollection() as $invoice) {

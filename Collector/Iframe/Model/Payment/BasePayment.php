@@ -193,6 +193,10 @@ class BasePayment extends \Magento\Payment\Model\Method\AbstractMethod
             } catch (\Exception $e) {
                 $this->collectorLogger->error($e->getMessage());
                 $this->collectorLogger->error($e->getTraceAsString());
+                throw new CouldNotSaveException(
+                    __($e->getMessage()),
+                    $e
+                );
             }
         }
         $this->collectorSession->setIsIframe(false);
@@ -232,6 +236,10 @@ class BasePayment extends \Magento\Payment\Model\Method\AbstractMethod
                 );
                 $this->collectorLogger->error($e->getMessage());
                 $this->collectorLogger->error($e->getTraceAsString());
+                throw new CouldNotSaveException(
+                    __($e->getMessage()),
+                    $e
+                );
             }
         } else {
             foreach ($payment->getOrder()->getInvoiceCollection() as $invoice) {
@@ -298,6 +306,10 @@ class BasePayment extends \Magento\Payment\Model\Method\AbstractMethod
                     } catch (\Exception $e) {
                         $this->collectorLogger->error($e->getMessage());
                         $this->collectorLogger->error($e->getTraceAsString());
+                        throw new CouldNotSaveException(
+                            __($e->getMessage()),
+                            $e
+                        );
                     }
                 }
             }
@@ -321,6 +333,10 @@ class BasePayment extends \Magento\Payment\Model\Method\AbstractMethod
         } catch (\Exception $e) {
             $this->collectorLogger->error($e->getMessage());
             $this->collectorLogger->error($e->getTraceAsString());
+            throw new CouldNotSaveException(
+                __($e->getMessage()),
+                $e
+            );
         }
     }
 
@@ -341,6 +357,10 @@ class BasePayment extends \Magento\Payment\Model\Method\AbstractMethod
         } catch (\Exception $e) {
             $this->collectorLogger->error($e->getMessage());
             $this->collectorLogger->error($e->getTraceAsString());
+            throw new CouldNotSaveException(
+                __($e->getMessage()),
+                $e
+            );
         }
     }
 
@@ -363,6 +383,10 @@ class BasePayment extends \Magento\Payment\Model\Method\AbstractMethod
             } catch (\Exception $e) {
                 $this->collectorLogger->error(var_export($e->getMessage(), true));
                 $this->collectorLogger->error(var_export($e->getTraceAsString(), true));
+                throw new CouldNotSaveException(
+                    __($e->getMessage()),
+                    $e
+                );
             }
         }
     }
