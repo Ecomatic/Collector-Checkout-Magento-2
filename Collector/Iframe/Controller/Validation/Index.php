@@ -119,7 +119,14 @@ class Index extends \Magento\Framework\App\Action\Action
      * @var \Magento\Framework\Registry
      */
     protected $registry;
-    
+    /**
+     * @var \Magento\Catalog\Api\ProductRepositoryInterface
+     */
+    protected $productRepository;
+    /**
+    * @var \Magento\CatalogInventory\Api\StockStateInterface
+    */
+    protected $stockState;
     /**
      * Index constructor.
      * @param \Magento\Framework\App\Action\Context $context
@@ -149,6 +156,8 @@ class Index extends \Magento\Framework\App\Action\Action
      * @param \Magento\Customer\Model\AddressFactory $addressFactory
      * @param \Collector\Iframe\Model\State $orderState
      * @param \Magento\Framework\Registry $registry
+     * @param \Magento\Catalog\Api\ProductRepositoryInterface $productRepository
+     * @param \Magento\CatalogInventory\Api\StockStateInterface $stockState
 	 * @param \Collector\Base\Model\Config $_config
      */
     public function __construct(
@@ -180,6 +189,8 @@ class Index extends \Magento\Framework\App\Action\Action
         \Magento\Customer\Model\AddressFactory $addressFactory,
         \Collector\Iframe\Model\State $orderState,
         \Magento\Framework\Registry $registry,
+        \Magento\Catalog\Api\ProductRepositoryInterface $productRepository,
+        \Magento\CatalogInventory\Api\StockStateInterface $stockState,
 		\Collector\Base\Model\Config $_config
     ) {
         $this->checkerFactory = $checkerFactory;
@@ -210,6 +221,8 @@ class Index extends \Magento\Framework\App\Action\Action
         $this->shippingRate = $_shippingRate;
         $this->cartRepositoryInterface = $_cartRepositoryInterface;
         $this->cartManagementInterface = $_cartManagementInterface;
+        $this->productRepository = $productRepository;
+        $this->stockState = $stockState;
         parent::__construct($context);
     }
 
@@ -223,6 +236,28 @@ class Index extends \Magento\Framework\App\Action\Action
             if (!$tempRegistry){
                 $this->registry->unregister('isSecureArea');
                 $this->registry->register('isSecureArea', true);
+            }
+            foreach ($order->getAllVisibleItems() as $item){
+                $product = $this->productRepository->get($item->getSku());
+                $stockItem = $product->getExtensionAttributes()->getStockItem();
+                if ($stockItem->getData('use_config_manage_stock') == 1){
+                    $manageStock = $this->collectorConfig->getManageStock();
+                }
+                else {
+                    $manageStock = $stockItem->getData('manage_stock');
+                }
+                if ($manageStock){
+                    $newQty = $this->stockState->getStockQty($product->getId(), $product->getStore()->getWebsiteId()) - $item->getQty() + $item->getQty();
+                    if ($newQty > 0){
+                        $product->setStockData(['qty' => $newQty, 'is_in_stock' => 1]);
+                        $product->setQuantityAndStockStatus(['qty' => $newQty, 'is_in_stock' => 1]);
+                    }
+                    else {
+                        $product->setStockData(['qty' => $newQty, 'is_in_stock' => 0]);
+                        $product->setQuantityAndStockStatus(['qty' => $newQty, 'is_in_stock' => 1]);
+                    }
+                    $product->save();
+                }
             }
             $order->delete();
             $this->registry->unregister('isSecureArea');
