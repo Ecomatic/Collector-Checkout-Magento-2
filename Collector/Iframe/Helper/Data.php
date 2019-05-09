@@ -268,10 +268,10 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         foreach ($methods as $method) {
             foreach ($method as $rate) {
                 $price = $rate->getPrice();
-                if ($this->scopeConfig->getValue('tax/calculation/shipping_includes_tax') == 0 && $this->scopeConfig->getValue('tax/cart_display/shipping') == 2){
+                if ($this->scopeConfig->getValue('tax/calculation/shipping_includes_tax') == 0 && $this->scopeConfig->getValue('tax/display/shipping') == 2){
                     $price += $price*($shippingTax/100);
                 }
-                else if ($this->scopeConfig->getValue('tax/calculation/shipping_includes_tax') == 1 && $this->scopeConfig->getValue('tax/cart_display/shipping') == 1){
+                else if ($this->scopeConfig->getValue('tax/calculation/shipping_includes_tax') == 1 && $this->scopeConfig->getValue('tax/display/shipping') == 1){
                     $price = $price/($shippingTax/100+1);
                 }
                 $shipMethod = [
@@ -292,7 +292,13 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
                         true,
                         false
                     );
-
+                if ($this->scopeConfig->getValue('tax/display/shipping') == 3){
+                    $shipMethod['content'] .= "(".__('Excl. Tax:')." ".$this->pricingHelper->currency(
+                            $price/($shippingTax/100+1),
+                            true,
+                            false
+                        ).")";
+                }
                 array_push($shippingMethods, $shipMethod);
             }
         }

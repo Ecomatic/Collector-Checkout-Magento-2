@@ -131,46 +131,33 @@ $checkoutHelper = $block->getCheckoutHelper();
             <?php $totals = $this->getTotals();
             foreach ($totals as $code => $total):
                 if ($code == 'fee_amount') continue;
-                ?>
-                <tr>
-                    <td class="col-name">
-                        <span class="<?php echo $code == 'grand_total' ? "col-grandname" : ""; ?>">
-                        <?php echo $total['title'] ?>
+                else if ($code == 'shipping'){?>
+                    <tr>
+                        <td class="col-name">
+                            <span class="<?php echo $code == 'grand_total' ? "col-grandname" : ""; ?>">
+                            <?php echo $total['title'] ?>
                         </span>
-                    </td>
-                    <td class="col-price <?php echo $code == 'grand_total' ? "col-grand" : ""; ?>">
-                        <?php
-                        $price = $total['value'];
-                        $additional = 0;
-                        ?>
-                        <?php echo $checkoutHelper->formatPrice($price + $priceHelper->currency($additional, false, false)); ?>
-                    </td>
-                </tr>
-                    
-                    
-                    
-                <?php if ($this->getConfigObject()->getValue('tax/cart_display/price') == 3): ?>
-                    <?php if ($code == "subtotal"){ ?>
+                        </td>
+                        <td class="col-price <?php echo $code == 'grand_total' ? "col-grand" : ""; ?>">
+                            <?php
+                            if ($this->getConfigObject()->getValue('tax/cart_display/shipping') == 1){
+                                $price = $this->getShippingExclTax();
+                            }
+                            else {
+                                $price = $this->getShippingInclTax();
+                            }
+
+                            $additional = 0;
+                            ?>
+                            <?php echo $checkoutHelper->formatPrice($price + $priceHelper->currency($additional, false, false)); ?>
+                        </td>
+                    </tr>
+                    <?php if ($this->getConfigObject()->getValue('tax/cart_display/shipping') == 3): ?>
                         <tr>
                             <td class="col-name">
-                                <span class="<?php echo $code == 'grand_total' ? "col-grandname" : ""; ?>">
-                                <?php echo $total['title'] . " " . __('Excl. Tax') ?>
-                                </span>
-                            </td>
-                            <td class="col-price <?php echo $code == 'grand_total' ? "col-grand" : ""; ?>">
-                                <?php
-                                $price = $this->getSubtotalExclTax();
-                                $additional = 0;
-                                ?>
-                                <?php echo $checkoutHelper->formatPrice($price + $priceHelper->currency($additional, false, false)); ?>
-                            </td>
-                        </tr>
-                    <?php } else if ($code == "shipping"){ ?>
-                        <tr>
-                            <td class="col-name">
-                                <span class="<?php echo $code == 'grand_total' ? "col-grandname" : ""; ?>">
-                                <?php echo $total['title'] . " " . __('Excl. Tax') ?>
-                                </span>
+                                    <span class="<?php echo $code == 'grand_total' ? "col-grandname" : ""; ?>">
+                                    <?php echo $total['title'] . " " . __('Excl. Tax') ?>
+                                    </span>
                             </td>
                             <td class="col-price <?php echo $code == 'grand_total' ? "col-grand" : ""; ?>">
                                 <?php
@@ -180,10 +167,62 @@ $checkoutHelper = $block->getCheckoutHelper();
                                 <?php echo $checkoutHelper->formatPrice($price + $priceHelper->currency($additional, false, false)); ?>
                             </td>
                         </tr>
-                    <?php } ?>
-                <?php endif; ?>
+                    <?php endif; ?>
+                <?php }
+                else {
+                ?>
+                    <tr>
+                        <td class="col-name">
+                            <span class="<?php echo $code == 'grand_total' ? "col-grandname" : ""; ?>">
+                            <?php echo $total['title'] ?>
+                            </span>
+                        </td>
+                        <td class="col-price <?php echo $code == 'grand_total' ? "col-grand" : ""; ?>">
+                            <?php
+                            $price = $total['value'];
+                            $additional = 0;
+                            ?>
+                            <?php echo $checkoutHelper->formatPrice($price + $priceHelper->currency($additional, false, false)); ?>
+                        </td>
+                    </tr>
+
+
+
+                    <?php if ($this->getConfigObject()->getValue('tax/cart_display/subtotal') == 3): ?>
+                        <?php if ($code == "subtotal"){ ?>
+                            <tr>
+                                <td class="col-name">
+                                    <span class="<?php echo $code == 'grand_total' ? "col-grandname" : ""; ?>">
+                                    <?php echo $total['title'] . " " . __('Excl. Tax') ?>
+                                    </span>
+                                </td>
+                                <td class="col-price <?php echo $code == 'grand_total' ? "col-grand" : ""; ?>">
+                                    <?php
+                                    $price = $this->getSubtotalExclTax();
+                                    $additional = 0;
+                                    ?>
+                                    <?php echo $checkoutHelper->formatPrice($price + $priceHelper->currency($additional, false, false)); ?>
+                                </td>
+                            </tr>
+                        <?php } else if ($code == "shipping"){ continue;?>
+                            <tr>
+                                <td class="col-name">
+                                    <span class="<?php echo $code == 'grand_total' ? "col-grandname" : ""; ?>">
+                                    <?php echo $total['title'] . " " . __('Excl. Tax') ?>
+                                    </span>
+                                </td>
+                                <td class="col-price <?php echo $code == 'grand_total' ? "col-grand" : ""; ?>">
+                                    <?php
+                                    $price = $this->getShippingExclTax();
+                                    $additional = 0;
+                                    ?>
+                                    <?php echo $checkoutHelper->formatPrice($price + $priceHelper->currency($additional, false, false)); ?>
+                                </td>
+                            </tr>
+                        <?php } ?>
+                    <?php endif; ?>
                     
-                    
+                <?php } ?>
                     
                     
                     

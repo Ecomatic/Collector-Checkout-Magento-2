@@ -267,6 +267,12 @@ class Cart extends \Magento\Checkout\Block\Onepage
         $totals = $this->getQuoteTotals();
         return $totals['shipping_incl_tax'] - $totals['shipping_tax_amount'];
     }
+
+    public function getShippingInclTax()
+    {
+        $totals = $this->getQuoteTotals();
+        return $totals['shipping_incl_tax'];
+    }
     
     protected function getQuoteTotals()
     {
