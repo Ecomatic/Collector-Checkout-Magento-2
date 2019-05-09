@@ -381,5 +381,59 @@ class Invoice extends \Magento\Payment\Model\Method\AbstractMethod
                 );
             }
         }
+        else {
+            $post_data = $this->getRequest()->getPostValue();
+            ob_start();
+            var_dump($post_data);
+            file_put_contents("var/log/coldev.log", "test 1 " . ob_get_clean() . "\n", FILE_APPEND);
+            $shippingAmount = $post_data['creditmemo']['shipping_amount'];
+            $req = [
+                'CorrelationId' => $order()->getIncrementId(),
+                'CountryCode' => $this->collectorConfig->getCountryCode(),
+                'InvoiceNo' => $order->getData('collector_invoice_id'),
+                'StoreId' => $storeID,
+                'CreditDate' => date("Y-m-d"),
+                'ArticleList' => []
+            ];
+            foreach ($order->getAllVisibleItems() as $item){
+                foreach ($post_data['creditmemo']['items'] as $key => $value){
+                    if ($item->getId() == $key){
+                        array_push($req['ArticleList'], [
+                            'ArticleId' => $item->getSku(),
+                            'Description' => $item->getName(),
+                            'Quantity' => $item->getQty()
+                        ]);
+                    }
+                }
+            }
+            if ($shippingAmount > 0) {
+                array_push($req['ArticleList'], [
+                    'ArticleId' => 'shipping',
+                    'Description' => $order->getShippingMethod(),
+                    'Quantity' => 1
+                ]);
+            }
+            if ($order->getData('fee_amount_invoiced') > 0
+                && $order->getData('fee_amount_invoiced') > $order->getData('fee_amount_refunded')) {
+                array_push($req['ArticleList'], [
+                    'ArticleId' => 'invoice_fee',
+                    'Description' => 'Invoice Fee',
+                    'Quantity' => 1
+                ]);
+            }
+            $client = $this->apiRequest->getInvoiceSOAP();
+            try {
+                $client->PartCreditInvoice($req);
+                $order->setData('fee_amount_refunded', $order->getData('fee_amount_invoiced'));
+                $order->setData('fee_amount_invoiced', 0);
+            } catch (\Exception $e) {
+                $this->logger->error($e->getMessage());
+                $this->logger->error($e->getTraceAsString());
+                throw new CouldNotSaveException(
+                    __($e->getMessage()),
+                    $e
+                );
+            }
+        }
     }
 }

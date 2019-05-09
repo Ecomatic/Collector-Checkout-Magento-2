@@ -50,7 +50,7 @@ class Partrefund
     private function getCreditmemos()
     {
         $results = [];
-        $searchCriteria = $this->searchCriteriaBuilder->addFilter('collector_refunded', '0', 'eq')->create();
+        /*$searchCriteria = $this->searchCriteriaBuilder->addFilter('collector_refunded', '0', 'eq')->create();
         $creditmemos = $this->creditmemoRepositoryInterface->getList($searchCriteria)->getItems();
         foreach ($creditmemos as $creditmemo) {
             if (strpos($creditmemo->getOrder()->getPayment()->getMethod(), "collector") !== false) {
@@ -65,7 +65,7 @@ class Partrefund
                 $creditmemo->setData('collector_refunded', '1');
                 $creditmemo->save();
             }
-        }
+        }*/
         return $results;
     }
 
