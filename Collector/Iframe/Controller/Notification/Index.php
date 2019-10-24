@@ -115,60 +115,66 @@ class Index extends \Magento\Framework\App\Action\Action
 
     public function execute()
     {
-        $resultPage = $this->resultPageFactory->create();
-        $quote = $this->quoteCollectionFactory->create()->addFieldToFilter(
-            "reserved_order_id",
-            $this->request->getParam('OrderNo')
-        )->getFirstItem();
-        $order = $this->orderInterface->loadByIncrementId($this->request->getParam('OrderNo'));
-        $this->collectorLogger->log('info',"recivied notification callback for order: " . $this->request->getParam('OrderNo'));
-        $response = $this->getResp($quote->getData('collector_private_id'), $quote->getData('collector_btype'));
+        try {
+            $resultPage = $this->resultPageFactory->create();
+            $quote = $this->quoteCollectionFactory->create()->addFieldToFilter(
+                "reserved_order_id",
+                $this->request->getParam('OrderNo')
+            )->getFirstItem();
+            $order = $this->orderInterface->loadByIncrementId($this->request->getParam('OrderNo'));
+            $this->collectorLogger->log('info', "recivied notification callback for order: " . $this->request->getParam('OrderNo'));
+            $response = $this->getResp($quote->getData('collector_private_id'), $quote->getData('collector_btype'));
 
-        $quote->setPaymentMethod($this->getPaymentMethodByName($response['data']['purchase']['paymentName'])); //payment method
-        $quote->getPayment()->importData(['method' => $this->getPaymentMethodByName($response['data']['purchase']['paymentName'])]);
-        $fee = 0;
-        if ($this->getPaymentMethodByName($response['data']['purchase']['paymentName']) == 'collector_invoice'){
-            if ($response['data']['customerType'] == "PrivateCustomer"){
-                $fee = $this->collectorConfig->getInvoiceB2CFee();
+            $quote->setPaymentMethod($this->getPaymentMethodByName($response['data']['purchase']['paymentName'])); //payment method
+            $quote->getPayment()->importData(['method' => $this->getPaymentMethodByName($response['data']['purchase']['paymentName'])]);
+            $fee = 0;
+            if ($this->getPaymentMethodByName($response['data']['purchase']['paymentName']) == 'collector_invoice') {
+                if ($response['data']['customerType'] == "PrivateCustomer") {
+                    $fee = $this->collectorConfig->getInvoiceB2CFee();
+                } else {
+                    $fee = $this->collectorConfig->getInvoiceB2BFee();
+                }
             }
-            else {
-                $fee = $this->collectorConfig->getInvoiceB2BFee();
+            $quote->setFeeAmount($fee);
+            $quote->setBaseFeeAmount($fee);
+            $quote->save();
+
+            $order->setFeeAmount($fee);
+            $order->setBaseFeeAmount($fee);
+            $order->setGrandTotal($order->getGrandTotal() + $fee);
+            $order->setBaseGrandTotal($order->getBaseGrandTotal() + $fee);
+
+            $this->setOrderStatusState($order, $response["data"]["purchase"]["result"]);
+            $order->getPayment()->setMethod($this->getPaymentMethodByName($response['data']['purchase']['paymentName']));
+            $order->getPayment()->save();
+            $order->setCollectorInvoiceId($response['data']['purchase']['purchaseIdentifier']);
+
+            if ($quote->getData('collector_btype') == \Collector\Base\Model\Session::B2B) {
+                $order->setCollectorSsn($response['data']['businessCustomer']['organizationNumber']);
             }
+
+            $payment = $order->getPayment();
+            $payment->setLastTransId($response['data']['purchase']['purchaseIdentifier']);
+            $payment->setTransactionId($response['data']['purchase']['purchaseIdentifier']);
+            $payment->setAdditionalInformation(
+                [\Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => (array)$response['data']['purchase']]
+            );
+            $formatedPrice = $order->getBaseCurrency()->formatTxt(
+                $order->getGrandTotal()
+            );
+            $payment->save();
+            $quote->setIsActive(0);
+            $order->save();
+
+            $this->orderSender->send($order);
+            $this->collectorLogger->log('info', "sent email for order: " . $this->request->getParam('OrderNo'));
+            return $resultPage;
         }
-        $quote->setFeeAmount($fee);
-        $quote->setBaseFeeAmount($fee);
-        $quote->save();
-
-        $order->setFeeAmount($fee);
-        $order->setBaseFeeAmount($fee);
-        $order->setGrandTotal($order->getGrandTotal() + $fee);
-        $order->setBaseGrandTotal($order->getBaseGrandTotal() + $fee);
-        
-        $this->setOrderStatusState($order, $response["data"]["purchase"]["result"]);
-        $order->getPayment()->setMethod($this->getPaymentMethodByName($response['data']['purchase']['paymentName']));
-        $order->getPayment()->save();
-        $order->setCollectorInvoiceId($response['data']['purchase']['purchaseIdentifier']);
-
-        if ($quote->getData('collector_btype') == \Collector\Base\Model\Session::B2B) {
-            $order->setCollectorSsn($response['data']['businessCustomer']['organizationNumber']);
+        catch (\Exception $e){
+            $this->collectorLogger->log('info', "notification callback failed for order: " . $this->request->getParam('OrderNo'));
+            $this->collectorLogger->log('info', "Error: " . $e->getMessage());
+            $this->collectorLogger->log('info', "Stack Trace: " . $e->getTraceAsString());
         }
-        
-        $payment = $order->getPayment();
-        $payment->setLastTransId($response['data']['purchase']['purchaseIdentifier']);
-        $payment->setTransactionId($response['data']['purchase']['purchaseIdentifier']);
-        $payment->setAdditionalInformation(
-            [\Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => (array) $response['data']['purchase']]
-        );
-        $formatedPrice = $order->getBaseCurrency()->formatTxt(
-            $order->getGrandTotal()
-        );
-        $payment->save();
-        $quote->setIsActive(0);
-        $order->save();
-
-        $this->orderSender->send($order);
-        $this->collectorLogger->log('info',"sent email for order: " . $this->request->getParam('OrderNo'));
-        return $resultPage;
     }
     
     public function getResp($privId, $btype)
@@ -216,7 +222,7 @@ class Index extends \Magento\Framework\App\Action\Action
             $this->collectorLogger->log('info',"set status/state for order: " . $this->request->getParam('OrderNo') . ", state: " . $state . ", status: " . $status);
             $order->setState($state)->setStatus($status);
         } catch (\Exception $e) {
-            return false;
+            throw $e;
         }
         return true;
     }
