@@ -174,6 +174,9 @@ class Index extends \Magento\Framework\App\Action\Action
             $this->collectorLogger->log('info', "notification callback failed for order: " . $this->request->getParam('OrderNo'));
             $this->collectorLogger->log('info', "Error: " . $e->getMessage());
             $this->collectorLogger->log('info', "Stack Trace: " . $e->getTraceAsString());
+            $result = $this->resultJsonFactory->create();
+            $result->setHttpResponseCode(500);
+            return $result;
         }
     }
     
