@@ -245,7 +245,8 @@ class Index extends \Magento\Framework\App\Action\Action
     public function execute()
     {
         $order = $this->orderInterface->loadByIncrementId($this->request->getParam('OrderNo'));
-	$quote = $order->getQuote();
+	$quoteId = $order->getQuoteId();
+        $quote = \Magento\Framework\App\ObjectManager::getInstance()->get('\Magento\Quote\Api\CartRepositoryInterface')->get($quoteId);
         if ($quote->getData('shown_success_page') == 1){
             return $this->redirect->redirect($this->response, '/');
         }
