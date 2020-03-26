@@ -245,7 +245,8 @@ class Index extends \Magento\Framework\App\Action\Action
     public function execute()
     {
         $order = $this->orderInterface->loadByIncrementId($this->request->getParam('OrderNo'));
-        if ($order->getData('shown_success_page') == 1){
+	$quote = $order->getQuote();
+        if ($quote->getData('shown_success_page') == 1){
             return $this->redirect->redirect($this->response, '/');
         }
         $this->eventManager->dispatch(
@@ -256,8 +257,9 @@ class Index extends \Magento\Framework\App\Action\Action
         $this->checkoutSession->setLastRealOrderId($order->getIncrementId());
         $resultPage = $this->resultPageFactory->create();
         $order = $this->orderInterface->load($order->getId()); // Reload order so that we do not overwrite changes to the order made by event observers
-        $order->setData('shown_success_page', 1);
-        $order->save();
+        $quote->setData('shown_success_page', 1);
+        $quote->save();
+	$order->save();
         return $resultPage;
     }
 }
