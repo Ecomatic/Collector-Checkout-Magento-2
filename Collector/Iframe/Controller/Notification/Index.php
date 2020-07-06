@@ -224,6 +224,7 @@ class Index extends \Magento\Framework\App\Action\Action
             }
             $this->collectorLogger->log('info',"set status/state for order: " . $this->request->getParam('OrderNo') . ", state: " . $state . ", status: " . $status);
             $order->setState($state)->setStatus($status);
+            $order->save();
         } catch (\Exception $e) {
             throw $e;
         }
